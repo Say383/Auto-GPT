@@ -195,6 +195,7 @@ class AutoGptFormatter(logging.Formatter):
 
 
 def remove_color_codes(s: str) -> str:
+    """Remove ANSI color codes from a string."""
     ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
     return ansi_escape.sub("", s)
 
