@@ -193,13 +193,10 @@ class AutoGptFormatter(logging.Formatter):
             record.message_no_color = ""
         return super().format(record)
 
-
-def remove_color_codes(s: str) -> str:
-    """Remove ANSI color codes from a string."""
-    ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
-    return ansi_escape.sub("", s)
-
-
+def validate_username(username):
+    # Check that the username contains only letters, numbers, underscores, and dashes
+    return re.match(r'^[a-zA-Z0-9_-]+$', username) is not None
+    
 logger = Logger()
 
 
