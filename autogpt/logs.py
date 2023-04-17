@@ -193,14 +193,11 @@ class AutoGptFormatter(logging.Formatter):
             record.message_no_color = ""
         return super().format(record)
 
+  def remove_color_codes(s: str) -> str:
+      ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
+      return ansi_escape.sub("", s)
 
-def remove_color_codes(s: str) -> str:
-    ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
-    return ansi_escape.sub("", s)
-
-
-logger = Logger()
-
+    logger = Logger()
 
 def print_assistant_thoughts(ai_name, assistant_reply):
     """Prints the assistant's thoughts to the console"""
