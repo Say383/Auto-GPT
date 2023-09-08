@@ -8,7 +8,7 @@ const DataPage: React.FC = () => {
   const [data, setData] = useState<any>([]);
   const getData = async () => {
     try {
-      let url = `http://localhost:8000/data`;
+      const url = `http://localhost:8000/data`;
       const response = await fetch(url);
       const responseData = await response.json();
 
