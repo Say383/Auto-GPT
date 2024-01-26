@@ -1,77 +1,149 @@
-import 'package:auto_gpt_flutter_client/models/benchmark_service/report_request_body.dart';
-import 'package:flutter/material.dart';
+import 'package:auto_gpt_flutter_client/models/benchmark/benchmark_task_status.dart';
+import 'package:auto_gpt_flutter_client/models/test_option.dart';
+import 'package:auto_gpt_flutter_client/viewmodels/chat_viewmodel.dart';
 import 'package:auto_gpt_flutter_client/viewmodels/skill_tree_viewmodel.dart';
+import 'package:auto_gpt_flutter_client/viewmodels/task_queue_viewmodel.dart';
+import 'package:auto_gpt_flutter_client/viewmodels/task_viewmodel.dart';
+import 'package:auto_gpt_flutter_client/views/task_queue/leaderboard_submission_button.dart';
+import 'package:auto_gpt_flutter_client/views/task_queue/leaderboard_submission_dialog.dart';
+import 'package:auto_gpt_flutter_client/views/task_queue/test_suite_button.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-// TODO: Add view model for task queue instead of skill tree view model
 class TaskQueueView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final viewModel = Provider.of<SkillTreeViewModel>(context);
+    // TODO: This should be injected instead
+    final viewModel = Provider.of<TaskQueueViewModel>(context);
 
-    // Reverse the node hierarchy
-    final reversedHierarchy =
-        viewModel.selectedNodeHierarchy?.reversed.toList() ?? [];
+    // Node hierarchy
+    final nodeHierarchy = viewModel.selectedNodeHierarchy ?? [];
 
     return Material(
       color: Colors.white,
-      child: Stack(
+      child: Column(
         children: [
           // The list of tasks (tiles)
-          ListView.builder(
-            itemCount: reversedHierarchy.length,
-            itemBuilder: (context, index) {
-              final node = reversedHierarchy[index];
-              return Container(
-                margin: EdgeInsets.fromLTRB(20, 5, 20, 5),
-                decoration: BoxDecoration(
-                  color: Colors.white, // white background
-                  border: Border.all(
-                      color: Colors.black, width: 1), // thin black border
-                  borderRadius: BorderRadius.circular(4), // small corner radius
-                ),
-                child: ListTile(
-                  title: Center(child: Text('${node.label}')),
-                  subtitle:
-                      Center(child: Text('${node.data.info.description}')),
-                ),
-              );
-            },
+          Expanded(
+            child: ListView.builder(
+              itemCount: nodeHierarchy.length,
+              itemBuilder: (context, index) {
+                final node = nodeHierarchy[index];
+
+                // Choose the appropriate leading widget based on the task status
+                Widget leadingWidget;
+                switch (viewModel.benchmarkStatusMap[node]) {
+                  case null:
+                  case BenchmarkTaskStatus.notStarted:
+                    leadingWidget = CircleAvatar(
+                      radius: 12,
+                      backgroundColor: Colors.grey,
+                      child: CircleAvatar(
+                        radius: 6,
+                        backgroundColor: Colors.white,
+                      ),
+                    );
+                    break;
+                  case BenchmarkTaskStatus.inProgress:
+                    leadingWidget = SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                      ),
+                    );
+                    break;
+                  case BenchmarkTaskStatus.success:
+                    leadingWidget = CircleAvatar(
+                      radius: 12,
+                      backgroundColor: Colors.green,
+                      child: CircleAvatar(
+                        radius: 6,
+                        backgroundColor: Colors.white,
+                      ),
+                    );
+                    break;
+                  case BenchmarkTaskStatus.failure:
+                    leadingWidget = CircleAvatar(
+                      radius: 12,
+                      backgroundColor: Colors.red,
+                      child: CircleAvatar(
+                        radius: 6,
+                        backgroundColor: Colors.white,
+                      ),
+                    );
+                    break;
+                }
+
+                return Container(
+                  margin: EdgeInsets.fromLTRB(20, 5, 20, 5),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: Border.all(color: Colors.black, width: 1),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: ListTile(
+                    leading: leadingWidget,
+                    title: Center(child: Text('${node.label}')),
+                    subtitle:
+                        Center(child: Text('${node.data.info.description}')),
+                  ),
+                );
+              },
+            ),
           ),
 
-          // Checkmark button at the bottom right
-          Positioned(
-            bottom: 50,
-            right: 50,
-            child: Tooltip(
-              message: 'Run suite of tests',
-              child: ElevatedButton(
-                onPressed: () {
-                  // Create a ReportRequestBody with hardcoded values
-                  ReportRequestBody reportRequestBody = ReportRequestBody(
-                    category: "coding",
-                    tests: [],
-                    mock: true,
-                  );
-
-                  // Call callGenerateReport method from SkillTreeViewModel
-                  viewModel.callGenerateReport(reportRequestBody);
-                },
-                child: Icon(Icons.check, color: Colors.green),
-                style: ButtonStyle(
-                  shape: MaterialStateProperty.all<RoundedRectangleBorder>(
-                    RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8.0),
-                    ),
-                  ),
-                  backgroundColor: MaterialStateProperty.all(Colors.white),
-                  side: MaterialStateProperty.all(
-                      BorderSide(color: Colors.green, width: 3)),
-                  minimumSize:
-                      MaterialStateProperty.all(Size(50, 50)), // Square size
-                  padding: MaterialStateProperty.all(EdgeInsets.all(0)),
+          // Buttons at the bottom
+          Padding(
+            padding: EdgeInsets.all(20),
+            child: Column(
+              children: [
+                // TestSuiteButton
+                TestSuiteButton(
+                  isDisabled: viewModel.isBenchmarkRunning,
+                  selectedOptionString: viewModel.selectedOption.description,
+                  onOptionSelected: (selectedOption) {
+                    print('Option Selected: $selectedOption');
+                    final skillTreeViewModel =
+                        Provider.of<SkillTreeViewModel>(context, listen: false);
+                    viewModel.updateSelectedNodeHierarchyBasedOnOption(
+                        TestOptionExtension.fromDescription(selectedOption)!,
+                        skillTreeViewModel.selectedNode,
+                        skillTreeViewModel.skillTreeNodes,
+                        skillTreeViewModel.skillTreeEdges);
+                  },
+                  onPlayPressed: (selectedOption) {
+                    print('Starting benchmark with option: $selectedOption');
+                    final chatViewModel =
+                        Provider.of<ChatViewModel>(context, listen: false);
+                    final taskViewModel =
+                        Provider.of<TaskViewModel>(context, listen: false);
+                    chatViewModel.clearCurrentTaskAndChats();
+                    viewModel.runBenchmark(chatViewModel, taskViewModel);
+                  },
                 ),
-              ),
+                SizedBox(height: 8), // Gap of 8 points between buttons
+                // LeaderboardSubmissionButton
+                LeaderboardSubmissionButton(
+                  onPressed: viewModel.benchmarkStatusMap.isEmpty ||
+                          viewModel.isBenchmarkRunning
+                      ? null
+                      : () {
+                          showDialog(
+                            context: context,
+                            builder: (context) => LeaderboardSubmissionDialog(
+                              onSubmit: (teamName, repoUrl, commitSha) {
+                                viewModel.submitToLeaderboard(
+                                    teamName, repoUrl, commitSha);
+                              },
+                              viewModel: viewModel,
+                            ),
+                          );
+                        },
+                  isDisabled: viewModel.isBenchmarkRunning ||
+                      viewModel.benchmarkStatusMap.isEmpty,
+                ),
+              ],
             ),
           ),
         ],

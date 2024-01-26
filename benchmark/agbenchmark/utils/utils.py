@@ -1,16 +1,22 @@
 # radio charts, logs, helper functions for tests, anything else relevant.
+import json
+import logging
 import os
 import re
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 from dotenv import load_dotenv
 
-load_dotenv()
+from agbenchmark.reports.processing.report_types import Test
 from agbenchmark.utils.data_types import DIFFICULTY_MAP, DifficultyLevel
+
+load_dotenv()
 
 AGENT_NAME = os.getenv("AGENT_NAME")
 REPORT_LOCATION = os.getenv("REPORT_LOCATION", None)
+
+logger = logging.getLogger(__name__)
 
 
 def replace_backslash(value: Any) -> Any:
@@ -24,17 +30,6 @@ def replace_backslash(value: Any) -> Any:
         return {k: replace_backslash(v) for k, v in value.items()}
     else:
         return value
-
-
-def calculate_success_percentage(results: list[bool]) -> float:
-    # Take the last 10 results or all if less than 10
-    last_results = results[-10:] if len(results) > 10 else results
-    success_count = last_results.count(True)
-    total_count = len(last_results)
-    if total_count == 0:
-        return 0
-    success_percentage = (success_count / total_count) * 100  # as a percentage
-    return round(success_percentage, 2)
 
 
 def get_test_path(json_file: str | Path) -> str:
@@ -58,41 +53,41 @@ def get_test_path(json_file: str | Path) -> str:
 
 
 def get_highest_success_difficulty(
-    data: dict, just_string: Optional[bool] = None
+    data: dict[str, Test], just_string: Optional[bool] = None
 ) -> str:
     highest_difficulty = None
     highest_difficulty_level = 0
 
     for test_name, test_data in data.items():
         try:
-            if test_data.get("tests", None):
-                highest_difficulty_str = test_data["metrics"]["highest_difficulty"]
+            if any(r.success for r in test_data.results):
+                difficulty_str = test_data.difficulty
+                if not difficulty_str:
+                    continue
+
                 try:
-                    highest_difficulty = DifficultyLevel[highest_difficulty_str]
-                    highest_difficulty_level = DIFFICULTY_MAP[highest_difficulty]
+                    difficulty_enum = DifficultyLevel[difficulty_str.lower()]
+                    difficulty_level = DIFFICULTY_MAP[difficulty_enum]
+
+                    if difficulty_level > highest_difficulty_level:
+                        highest_difficulty = difficulty_enum
+                        highest_difficulty_level = difficulty_level
                 except KeyError:
-                    print(
-                        f"Unexpected difficulty level '{highest_difficulty_str}' in test '{test_name}'"
+                    logger.warning(
+                        f"Unexpected difficulty level '{difficulty_str}' "
+                        f"in test '{test_name}'"
                     )
                     continue
-            else:
-                if test_data["metrics"]["success"]:
-                    difficulty_str = test_data["metrics"]["difficulty"]
-
-                    try:
-                        difficulty_enum = DifficultyLevel[difficulty_str.lower()]
-                        difficulty_level = DIFFICULTY_MAP[difficulty_enum]
-
-                        if difficulty_level > highest_difficulty_level:
-                            highest_difficulty = difficulty_enum
-                            highest_difficulty_level = difficulty_level
-                    except KeyError:
-                        print(
-                            f"Unexpected difficulty level '{difficulty_str}' in test '{test_name}'"
-                        )
-                        continue
-        except Exception:
-            print(f"Make sure you selected the right test, no reports were generated.")
+        except Exception as e:
+            logger.warning(
+                "An unexpected error [1] occurred while analyzing report [2]."
+                "Please notify a maintainer.\n"
+                f"Report data [1]: {data}\n"
+                f"Error [2]: {e}"
+            )
+            logger.warning(
+                "Make sure you selected the right test, no reports were generated."
+            )
             break
 
     if highest_difficulty is not None:
@@ -115,39 +110,27 @@ def get_highest_success_difficulty(
 #             remote_url = remote_url[:-4]
 #         git_commit_sha = f"{remote_url}/tree/{repo.head.commit.hexsha}"
 
-#         # print(f"GIT_COMMIT_SHA: {git_commit_sha}")
+#         # logger.debug(f"GIT_COMMIT_SHA: {git_commit_sha}")
 #         return git_commit_sha
 #     except Exception:
-#         # print(f"{directory} is not a git repository!")
+#         # logger.error(f"{directory} is not a git repository!")
 #         return None
 
 
-def agent_eligibible_for_optional_categories(
-    optional_challenge_categories: List, agent_categories: List
-) -> bool:
-    for element in optional_challenge_categories:
-        if element not in agent_categories:
-            return False
-    return True
+def write_pretty_json(data, json_file):
+    sorted_data = deep_sort(data)
+    json_graph = json.dumps(sorted_data, indent=4)
+    with open(json_file, "w") as f:
+        f.write(json_graph)
+        f.write("\n")
 
 
-def find_absolute_benchmark_path() -> Path:
-    # Find the absolute path to the current working directory
-    current_path = Path.cwd()
-
-    # Find the position of "Auto-GPT-Benchmarks" in the path
-    benchmark_path_index = (
-        current_path.parts.index("Auto-GPT-Benchmarks")
-        if "Auto-GPT-Benchmarks" in current_path.parts
-        else None
-    )
-
-    if benchmark_path_index is not None:
-        # Construct the absolute path starting from "Auto-GPT-Benchmarks"
-        benchmark_path = Path(*current_path.parts[: benchmark_path_index + 1])
-
-        return benchmark_path
-    else:
-        raise ValueError(
-            "The directory 'Auto-GPT-Benchmarks' is not found in the current path."
-        )
+def deep_sort(obj):
+    """
+    Recursively sort the keys in JSON object
+    """
+    if isinstance(obj, dict):
+        return {k: deep_sort(v) for k, v in sorted(obj.items())}
+    if isinstance(obj, list):
+        return [deep_sort(elem) for elem in obj]
+    return obj
