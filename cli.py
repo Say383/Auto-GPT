@@ -26,7 +26,8 @@ def setup():
     import os
     import subprocess
 
-    click.echo(
+    try:
+        click.echo(
         click.style(
             """
        d8888          888             .d8888b.  8888888b. 88888888888 
@@ -49,9 +50,9 @@ d88P     888  "Y88888  "Y888 "Y88P"   "Y8888P88 888           888
     if os.path.exists(setup_script):
         click.echo(click.style("🚀 Setup initiated...\n", fg="green"))
         try:
-            subprocess.check_call([setup_script], cwd=script_dir)
-        except subprocess.CalledProcessError:
-            click.echo(
+            subprocess.run([setup_script], cwd=script_dir, check=True, capture_output=True)
+    except subprocess.CalledProcessError as e:
+        click.echo(
                 click.style("❌ There was an issue with the installation.", fg="red")
             )
             install_error = True
