@@ -254,29 +254,53 @@ def create(agent_name):
             )
     except Exception as e:
         click.echo(click.style(f"😢 An error occurred: {e}", fg="red"))
-
-
-@agent.command()
-@click.argument("agent_name")
-@click.option(
-    "--no-setup",
-    is_flag=True,
-    help="Disables running the setup script before starting the agent",
-)
-def start(agent_name, no_setup):
-    """Start agent command"""
-    import os
-    import subprocess
-
-    script_dir = os.path.dirname(os.path.realpath(__file__))
-    agent_dir = os.path.join(script_dir, f"autogpts/{agent_name}")
-    run_command = os.path.join(agent_dir, "run")
-    run_bench_command = os.path.join(agent_dir, "run_benchmark")
-    if os.path.exists(agent_dir) and os.path.isfile(run_command) and os.path.isfile(run_bench_command):
-        os.chdir(agent_dir)
-        if not no_setup:
-            setup_process = subprocess.Popen(["./setup"], cwd=agent_dir)
-            setup_process.wait()
+    
+    
+    @agent.command()
+    @click.argument("agent_name")
+    @click.option(
+        "--no-setup",
+        is_flag=True,
+        help="Disables running the setup script before starting the agent",
+    )
+    def start(agent_name, no_setup):
+        """Start agent command"""
+        import os
+        import subprocess
+    
+        script_dir = os.path.dirname(os.path.realpath(__file__))
+        agent_dir = os.path.join(script_dir, f"autogpts/{agent_name}")
+        run_command = os.path.join(agent_dir, "run")
+        run_bench_command = os.path.join(agent_dir, "run_benchmark")
+        if os.path.exists(agent_dir) and os.path.isfile(run_command) and os.path.isfile(run_bench_command):
+            os.chdir(agent_dir)
+            if not no_setup:
+                setup_process = subprocess.Popen(["./setup"], cwd=agent_dir)
+                setup_process.wait()
+            try:
+                subprocess.Popen(["./run_benchmark", "serve"], cwd=agent_dir)
+                click.echo(f"Benchmark Server starting please wait...")
+                subprocess.Popen(["./run"], cwd=agent_dir)
+                click.echo(f"Agent '{agent_name}' starting please wait...")
+            except subprocess.CalledProcessError as e:
+                click.echo(
+                    click.style("❌ There was an issue with starting the agent.", fg="red")
+                )
+                click.echo(click.style(f"Error: {e}", fg="red"))
+        elif not os.path.exists(agent_dir):
+            click.echo(
+                click.style(
+                    f"😞 Agent '{agent_name}' does not exist. Please create the agent first.",
+                    fg="red",
+                )
+            )
+        else:
+            click.echo(
+                click.style(
+                    f"😞 Run command does not exist in the agent '{agent_name}' directory.",
+                    fg="red",
+                )
+            )
         subprocess.Popen(["./run_benchmark", "serve"], cwd=agent_dir)
         click.echo(f"Benchmark Server starting please wait...")
         subprocess.Popen(["./run"], cwd=agent_dir)
