@@ -329,6 +329,18 @@ def stop():
     import subprocess
 
     try:
+        subprocess.run("lsof -t -i :8000")
+    except subprocess.CalledProcessError:
+        click.echo("No process is running on port 8000")
+    except Exception as e:
+        click.echo(click.style(f"An error occurred: {e}", fg="red"))
+
+    try:
+        subprocess.run("lsof -t -i :8080")
+    except subprocess.CalledProcessError:
+        click.echo("No process is running on port 8080")
+    except Exception as e:
+        click.echo(click.style(f"An error occurred: {e}", fg="red"))
         pids = subprocess.check_output(["lsof", "-t", "-i", ":8000"]).split()
         if isinstance(pids, int):
             os.kill(int(pids), signal.SIGTERM)
