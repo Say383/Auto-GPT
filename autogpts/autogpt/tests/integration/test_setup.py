@@ -35,6 +35,7 @@ async def test_apply_overrides_to_ai_settings():
     assert directives.resources == ["NewResource"]
     assert directives.constraints == ["NewConstraint"]
     assert directives.best_practices == ["NewBestPractice"]
+    assert directives.best_practices == ["NewBestPractice"]
 
 
 @pytest.mark.asyncio
