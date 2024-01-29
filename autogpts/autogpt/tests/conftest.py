@@ -4,6 +4,8 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import pytest
+import new_module
+import another_module
 import yaml
 from pytest_mock import MockerFixture
 
@@ -24,6 +26,8 @@ pytest_plugins = [
     "tests.integration.agent_factory",
     "tests.integration.memory.utils",
     "tests.vcr",
+    "path.to.new_plugin",
+    "path.to.another_plugin",
 ]
 
 

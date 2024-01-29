@@ -2,7 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthService {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance; import 'package:flutter/foundation.dart'; import 'package:flutter/services.dart'; import 'dart:io';
   final GoogleSignIn googleSignIn = GoogleSignIn(
       clientId:
           "387936576242-iejdacrjljds7hf99q0p6eqna8rju3sb.apps.googleusercontent.com");
@@ -28,7 +28,10 @@ class AuthService {
     }
   }
 
-// Sign in with GitHub using redirect
+else if (/* check if GitHub Actions environment */) {
+      final GithubAuthProvider provider = GithubAuthProvider();
+      return await _auth.signInWithPopup(provider);
+    }
   Future<UserCredential?> signInWithGitHub() async {
     try {
       final GithubAuthProvider provider = GithubAuthProvider();

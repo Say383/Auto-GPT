@@ -6,7 +6,16 @@ To ensure efficiency, add the imports to the functions so only what is needed is
 """
 try:
     import click
+    import os
+import platform
+import subprocess
+import sys
+import click
+try:
     import github
+except ImportError:
+    sys.stderr.write('The `github` library is not installed. Please ensure it is available in the environment.')
+    sys.exit(1)
 except ImportError:
     import os
 
@@ -836,12 +845,18 @@ def update(agent_name, hash, branch):
     # Check if the agent_name.json file exists in the arena directory
     agent_json_file = f"./arena/{agent_name}.json"
     # Check if they are on the correct branch
-    current_branch = (
-        subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"])
-        .decode("utf-8")
-        .strip()
-    )
+    try:
+        current_branch = (
+            subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"])
+            .decode("utf-8")
+            .strip()
+        )
+except subprocess.CalledProcessError:
+        current_branch = None
+    try:
     correct_branch = f"arena_submission_{agent_name}"
+except NameError:
+    correct_branch = None
     if current_branch != correct_branch:
         click.echo(
             click.style(
