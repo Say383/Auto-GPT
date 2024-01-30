@@ -6,7 +6,7 @@ To ensure efficiency, add the imports to the functions so only what is needed is
 """
 try:
     import click
-    import github
+    import subprocess, json
 except ImportError:
     import os
 
@@ -29,7 +29,7 @@ def setup():
     click.echo(
         click.style(
             """
-       d8888          888             .d8888b.  8888888b. 88888888888 
+       d8888 888             .d8888b.  8888888b. 88888888888 
       d88888          888            d88P  Y88b 888   Y88b    888     
      d88P888          888            888    888 888    888    888     
     d88P 888 888  888 888888 .d88b.  888        888   d88P    888     
@@ -344,6 +344,7 @@ def list():
     except FileNotFoundError:
         click.echo(click.style("The autogpts directory does not exist 😢", fg="red"))
     except Exception as e:
+        click.echo(click.style(f"An error occurred: {e}", fg="red"))
         click.echo(click.style(f"An error occurred: {e} 😢", fg="red"))
 
 
