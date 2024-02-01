@@ -28,7 +28,7 @@ def test_dalle(agent: Agent, workspace, image_size, cached_openai_client):
     )
 
 
-@pytest.mark.xfail(
+@pytest.mark.xfail(raises=Exception)(
     reason="The image is too big to be put in a cassette for a CI pipeline. "
     "We're looking into a solution."
 )
@@ -48,7 +48,7 @@ def test_huggingface(agent: Agent, workspace, image_size, image_model):
     )
 
 
-@pytest.mark.xfail(reason="SD WebUI call does not work.")
+@pytest.mark.xfail(raises=Exception)(reason="SD WebUI call does not work.")
 def test_sd_webui(agent: Agent, workspace, image_size):
     """Test SD WebUI image generation."""
     generate_and_validate(
@@ -59,7 +59,7 @@ def test_sd_webui(agent: Agent, workspace, image_size):
     )
 
 
-@pytest.mark.xfail(reason="SD WebUI call does not work.")
+@pytest.mark.xfail(raises=Exception)(reason="SD WebUI call does not work.")
 def test_sd_webui_negative_prompt(agent: Agent, workspace, image_size):
     gen_image = functools.partial(
         generate_image_with_sd_webui,
@@ -109,7 +109,7 @@ def generate_and_validate(
         assert img.size == (image_size, image_size)
 
 
-@pytest.mark.parametrize(
+@pytest.mark.parametrized(
     "return_text",
     [
         # Delay
