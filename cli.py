@@ -6,12 +6,13 @@ To ensure efficiency, add the imports to the functions so only what is needed is
 """
 try:
     import click
+import os
     import github
 except ImportError:
     import os
 
-    os.system("pip3 install click")
-    os.system("pip3 install PyGithub")
+    click.echo("pip3 install click")
+    click.echo("pip3 install PyGithub")
     import click
 
 
@@ -606,6 +607,8 @@ def enter(agent_name, branch):
     from datetime import datetime
 
     from github import Github
+import os
+import json
 
     # Check if the agent_name directory exists in the autogpts directory
     agent_dir = f"./autogpts/{agent_name}"
