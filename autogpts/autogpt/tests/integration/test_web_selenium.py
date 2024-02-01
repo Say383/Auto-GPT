@@ -11,7 +11,7 @@ async def test_browse_website_nonexistent_url(agent: Agent, cached_openai_client
     url = "https://auto-gpt-thinks-this-website-does-not-exist.com"
     question = "How to execute a barrel roll"
 
-    with pytest.raises(BrowsingError, match="NAME_NOT_RESOLVED") as raised:
+    with pytest.raises(BrowsingError, match='NAME_NOT_RESOLVED', reason='Pending Fix') as raised:
         await read_webpage(url=url, question=question, agent=agent)
 
         # Sanity check that the response is not too long
